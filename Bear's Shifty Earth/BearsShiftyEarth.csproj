@@ -62,8 +62,4 @@
   </Content>
 </ItemGroup>
 
-<ItemGroup>
-  <Folder Include="src\" />
-</ItemGroup>
-
 </Project>
