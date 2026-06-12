@@ -2,5 +2,10 @@
   "hello": "Skkkkrrrrt!",
   "settings-initializing-file": "No config file found. Created a new one.",
   "settings-missing-error": "Aborting mod initialization; can't find the settings object at all.",
-  "settings-load-error": "Bad things happened while reading config file, falling back to default values."
+  "settings-load-error": "Bad things happened while reading config file, falling back to default values.",
+
+  "config-supportrequired": "The total number of support points needed to be stable. If the block has this many points or more, it will not fall. If it has less, it has a chance to fall.",
+  "config-blocktraitmodifiers": "What bonuses or penalties a block should have based on its composition. By default, clay is more solid than normal soil, while peat is clumpy and crumbly.",
+  "config-fallsideways": "Whether or not the block can fall sideways.",
+  "config-requirebeneath": "If true, a block will ALWAYS fall if it has no support beneath."
 }

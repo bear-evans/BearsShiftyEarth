@@ -10,10 +10,25 @@ namespace BearsShiftyEarth
     /// </summary>
     public class BearsShiftyEarthModSystem : ModSystem
     {
+        #region Enums
+
+        public enum EarthType
+        {
+            NONE,
+            Soil,
+            Clay,
+            Peat
+        }
+
+        #endregion Enums
+
         #region Properties
 
         public static ICoreAPI? Api { get => API; }
         public static ILogger? Logger { get => LOGGER; }
+        public static AssetLocation SoilWildcard { get => SOILWILDCARD; }
+        public static AssetLocation ClayWildcard { get => CLAYWILDCARD; }
+        public static AssetLocation PeatWildcard { get => PEATWILDCARD; }
 
         #endregion Properties
 
@@ -22,24 +37,17 @@ namespace BearsShiftyEarth
         private static ICoreAPI? API;
         private static ILogger? LOGGER;
 
+        private static AssetLocation SOILWILDCARD = new("soil-*-*");
+        private static AssetLocation CLAYWILDCARD = new("rawclay-*-*");
+        private static AssetLocation PEATWILDCARD = new("peat-*-*");
+
+        private static AssetLocation SPARSEGRASSWILDCARD = new("*-*-verysparse");
+        private static AssetLocation PATCHYGRASSWILDCARD = new("*-*-*");
+        private static AssetLocation GRASSYWILDCARD = new("*-*-grassy");
+
         #endregion Fields
 
         #region Methods
-
-        public static void EmitChatMessage(string message)
-        {
-            LOGGER?.Chat(message);
-        }
-
-        public static void EmitNotificationMessage(string message)
-        {
-            LOGGER?.Notification(message);
-        }
-
-        public static void EmitErrorMessage(string message)
-        {
-            LOGGER?.Error(message);
-        }
 
         // Called on server and client
         // Useful for registering block/entity classes on both sides
