@@ -19,6 +19,7 @@ namespace BearsShiftyEarth
         private bool isShifty = false;
         private int requiredSupport;
         private int rainPenalty;
+        private int plantBonus;
 
         #endregion Fields
 
@@ -36,8 +37,60 @@ namespace BearsShiftyEarth
         {
             base.Initialize(properties);
 
-            // set properties based on configured settings
+            // make sure we're only being shifty with certain blocks
+            (isShifty, BearsShiftyEarthModSystem.EarthType shiftyType) = IsWhatShiftyBlock(block);
+
+            if (!isShifty) {
+                return;
+            }
+
             requiredSupport = ShiftySettingsSystem.Settings.SupportRequired;
+            plantBonus = ShiftySettingsSystem.Settings.PlantHostBonus;
+
+            // set properties based on configured settings
+            // penalties and bonuses are cached and precalculated for improved performance
+            switch (shiftyType) {
+                case BearsShiftyEarthModSystem.EarthType.NONE:
+                    break;
+
+                case BearsShiftyEarthModSystem.EarthType.Soil:
+                    rainPenalty = ShiftySettingsSystem.Settings.MaximumSoilStormPenalty;
+                    break;
+
+                case BearsShiftyEarthModSystem.EarthType.Clay:
+                    requiredSupport -= ShiftySettingsSystem.Settings.ClayModifier;
+                    rainPenalty = ShiftySettingsSystem.Settings.MaximumClayStormPenalty;
+                    break;
+
+                case BearsShiftyEarthModSystem.EarthType.Peat:
+                    requiredSupport -= ShiftySettingsSystem.Settings.PeatModifier;
+                    rainPenalty = ShiftySettingsSystem.Settings.MaximumPeatStormPenalty;
+                    break;
+
+                default:
+                    break;
+            }
+
+            // check for grass coverage
+            switch (block.LastCodePart()) {
+                case "verysparse":
+                    requiredSupport -= (int)(ShiftySettingsSystem.Settings.GrassCoverBonus * 0.33f);
+                    BearsShiftyEarthModSystem.Logger.Notification($"Block with code ${block.Code} has a grass support bonus of {(int)(ShiftySettingsSystem.Settings.GrassCoverBonus * 0.33f)}");
+                    break;
+
+                case "sparse":
+                    requiredSupport -= (int)(ShiftySettingsSystem.Settings.GrassCoverBonus * 0.66f);
+                    BearsShiftyEarthModSystem.Logger.Notification($"Block with code ${block.Code} has a grass support bonus of {(int)(ShiftySettingsSystem.Settings.GrassCoverBonus * 0.66f)}");
+                    break;
+
+                case "normal":
+                    requiredSupport -= ShiftySettingsSystem.Settings.GrassCoverBonus;
+                    BearsShiftyEarthModSystem.Logger.Notification($"Block with code ${block.Code} has a grass support bonus of {ShiftySettingsSystem.Settings.GrassCoverBonus}");
+                    break;
+
+                default:
+                    break;
+            }
         }
 
         #endregion Methods
@@ -79,11 +132,12 @@ namespace BearsShiftyEarth
         /// </summary>
         public (bool, BearsShiftyEarthModSystem.EarthType) IsWhatShiftyBlock(Block block)
         {
-            //if (WildcardUtil.Match(block.Code, "soil-*-*")) {
-            //    return (true, BearsShiftyEarthModSystem.EarthType.Soil);
-            //}
-
-            return (false, BearsShiftyEarthModSystem.EarthType.NONE);
+            return block.FirstCodePart() switch {
+                "soil" => (true, BearsShiftyEarthModSystem.EarthType.Soil),
+                "peat" => (true, BearsShiftyEarthModSystem.EarthType.Clay),
+                "rawclay" => (true, BearsShiftyEarthModSystem.EarthType.Peat),
+                _ => (false, BearsShiftyEarthModSystem.EarthType.NONE),
+            };
         }
 
         /// <summary>

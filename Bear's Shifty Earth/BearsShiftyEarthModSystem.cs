@@ -26,24 +26,25 @@ namespace BearsShiftyEarth
 
         public static ICoreAPI? Api { get => API; }
         public static ILogger? Logger { get => LOGGER; }
-        public static AssetLocation SoilWildcard { get => SOILWILDCARD; }
-        public static AssetLocation ClayWildcard { get => CLAYWILDCARD; }
-        public static AssetLocation PeatWildcard { get => PEATWILDCARD; }
+        public static string SoilWildcard { get => SOILWILDCARD; }
+        public static string ClayWildcard { get => CLAYWILDCARD; }
+        public static string PeatWildcard { get => PEATWILDCARD; }
+        public static string SparseWildcard { get => SPARSEGRASSWILDCARD; }
+        public static string PatchyWildcard { get => PATCHYGRASSWILDCARD; }
+        public static string GrassyWildcard { get => GRASSYWILDCARD; }
 
         #endregion Properties
 
         #region Fields
 
+        private const string SOILWILDCARD = "soil";
+        private const string CLAYWILDCARD = "rawclay";
+        private const string PEATWILDCARD = "peat";
+        private const string SPARSEGRASSWILDCARD = "verysparse";
+        private const string PATCHYGRASSWILDCARD = "sparse";
+        private const string GRASSYWILDCARD = "normal";
         private static ICoreAPI? API;
         private static ILogger? LOGGER;
-
-        private static AssetLocation SOILWILDCARD = new("soil-*-*");
-        private static AssetLocation CLAYWILDCARD = new("rawclay-*-*");
-        private static AssetLocation PEATWILDCARD = new("peat-*-*");
-
-        private static AssetLocation SPARSEGRASSWILDCARD = new("*-*-verysparse");
-        private static AssetLocation PATCHYGRASSWILDCARD = new("*-*-*");
-        private static AssetLocation GRASSYWILDCARD = new("*-*-grassy");
 
         #endregion Fields
 
