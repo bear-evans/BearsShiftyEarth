@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Reflection;
 using Vintagestory.API.Common;
+using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
 using Vintagestory.GameContent;
@@ -55,16 +57,19 @@ namespace BearsShiftyEarth
 
                 case BearsShiftyEarthModSystem.EarthType.Soil:
                     rainPenalty = ShiftySettingsSystem.Settings.MaximumSoilStormPenalty;
+                    _ = SetFallChance(ShiftySettingsSystem.Settings.SoilFallChance);
                     break;
 
                 case BearsShiftyEarthModSystem.EarthType.Clay:
                     requiredSupport -= ShiftySettingsSystem.Settings.ClayModifier;
                     rainPenalty = ShiftySettingsSystem.Settings.MaximumClayStormPenalty;
+                    _ = SetFallChance(ShiftySettingsSystem.Settings.ClayFallChance);
                     break;
 
                 case BearsShiftyEarthModSystem.EarthType.Peat:
                     requiredSupport -= ShiftySettingsSystem.Settings.PeatModifier;
                     rainPenalty = ShiftySettingsSystem.Settings.MaximumPeatStormPenalty;
+                    _ = SetFallChance(ShiftySettingsSystem.Settings.PeatFallChance);
                     break;
 
                 default:
@@ -110,7 +115,7 @@ namespace BearsShiftyEarth
         /// </summary>
         public override void OnNeighbourBlockChange(IWorldAccessor world, BlockPos pos, BlockPos neibpos, ref EnumHandling handling)
         {
-            // default to vanilla if we are not a shifty block
+            // default to vanilla if we are not a shifty block or do vanilla if we ARE a shifty block
             if (!isShifty || IsUnstable(world, pos)) {
                 base.OnNeighbourBlockChange(world, pos, neibpos, ref handling);
             }
@@ -142,15 +147,22 @@ namespace BearsShiftyEarth
 
             IBlockAccessor blockAccessor = world.GetLockFreeBlockAccessor();
 
-            // if we are exposed to the sky, penalize support based on the amount of rainfall.
+            // if we are exposed to the sky, penalize support based on the amount of rainfall. Light drizzle isn't enough to
+            // trigger any penalty, I've noticed, so no need for special logic there
             if (blockAccessor.GetRainMapHeightAt(pos.X, pos.Z) <= pos.Y) {
                 effectiveSupport += (int)world.BlockAccessor.GetClimateAt(pos).Rainfall * rainPenalty;
+#if DEBUG
+                BearsShiftyEarthModSystem.Logger?.Chat($"Block ${block.Code} has rain penalty of {effectiveSupport}");
+#endif
             }
 
             // check for support below
             _ = scanPos.Set(pos.X, pos.Y - 1, pos.Z);
             if (blockAccessor.GetBlock(scanPos).SideSolid[BlockFacing.UP.Index]) {
                 effectiveSupport += 15;
+#if DEBUG
+                BearsShiftyEarthModSystem.Logger?.Chat($"Block ${block.Code} has block beneath, current support is {effectiveSupport}");
+#endif
                 if (effectiveSupport >= requiredSupport) {
                     return false;
                 }
@@ -163,6 +175,9 @@ namespace BearsShiftyEarth
 
                 if (blockAccessor.GetBlock(scanPos).SideSolid[blockFacing.Opposite.Index]) {
                     effectiveSupport += 10;
+#if DEBUG
+                    BearsShiftyEarthModSystem.Logger?.Chat($"Block ${block.Code} has solid block at face {BlockFacing.HORIZONTALS[i]}, current support is {effectiveSupport}");
+#endif
                     if (effectiveSupport >= requiredSupport) {
                         return false;
                     }
@@ -173,10 +188,31 @@ namespace BearsShiftyEarth
             _ = scanPos.Set(pos.X, pos.Y + 1, pos.Z);
             if (blockAccessor.GetBlock(scanPos) is BlockPlant or BlockCrop) {
                 effectiveSupport += plantBonus;
+#if DEBUG
+                BearsShiftyEarthModSystem.Logger?.Chat($"Block ${block.Code} has plant on top, current support is {effectiveSupport}");
+#endif
                 if (effectiveSupport >= requiredSupport) {
                     return false;
                 }
             }
+
+            return true;
+        }
+
+        /// <summary>
+        /// The actual chance to fall is stored in a private field, so we can't access it even as a child class. This uses the dark magic of reflection to access and set it anyway.
+        /// Returns true if the fall chance was successfully set, false if there was a problem, just in case branching logic is desired later.
+        /// </summary>
+        private bool SetFallChance(float newChance)
+        {
+            FieldInfo? chanceField = typeof(BlockBehaviorUnstableFalling).GetField("fallSidewaysChance", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            if (chanceField == null) {
+                BearsShiftyEarthModSystem.Logger?.Error(Lang.Get("bearsshiftyearth:error-reflection-fallchance"));
+                return false;
+            }
+
+            chanceField.SetValue(this, newChance);
 
             return true;
         }

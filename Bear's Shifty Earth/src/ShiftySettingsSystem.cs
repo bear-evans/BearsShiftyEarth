@@ -11,14 +11,18 @@ namespace BearsShiftyEarth
         public int SupportRequired { get; set; } = 30;
         public string BlockTraitModifiersComment { get => "What bonuses or penalties a block should have based on its composition. By default, clay is more solid than normal soil (unless wet), while peat is amorphous and prone to 'peat slides' and 'bog bursts.' This modifier is subtracted from the base support requirement."; }
         public int ClayModifier { get; set; } = 10;
-        public int PeatModifier { get; set; } = -8;
+        public int PeatModifier { get; set; } = -10;
         public string PlantsComment { get => "Root systems help to stabilize soil. GrassCoverBonus indicates the bonus a soil block gets from having full grass coverage. Patchy will have 2/3 of this value, while sparse will have 1/3. PlantHostBonus indicates the support bonus granted by a plant block on its top surface, such as tall grass or a fern. These two bonuses stack. Large plant blocks are assumed to have deep roots that fill the interior of the soil block and provide significant structural integrity, while grass is not as deep."; }
         public int GrassCoverBonus { get; set; } = 12;
         public int PlantHostBonus { get; set; } = 15;
         public string EnvironmentComment { get => "MaximumStormPenalty is a penalty to support given to any block exposed to heavy rain. This penalty is scaled down for less intense rain. By default, clay is sturdier than soil when dry but becomes LESS sturdy when wet. Peat is naturally very sludgy and becomes nearly impossible to support when wet."; }
-        public int MaximumSoilStormPenalty { get; set; } = -8;
+        public int MaximumSoilStormPenalty { get; set; } = -10;
         public int MaximumClayStormPenalty { get; set; } = -20;
         public int MaximumPeatStormPenalty { get; set; } = -20;
+        public string FallChanceComment { get => "If not properly supported, what chance should each earth type have of falling when triggered. Expressed as a decimal between 0 and 1."; }
+        public float SoilFallChance { get; set; } = 0.4f;
+        public float ClayFallChance { get; set; } = 0.2f;
+        public float PeatFallChance { get; set; } = .75f;
 
         #endregion Fields
     }
