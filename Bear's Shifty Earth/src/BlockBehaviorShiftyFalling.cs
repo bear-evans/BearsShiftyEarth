@@ -75,17 +75,14 @@ namespace BearsShiftyEarth
             switch (block.LastCodePart()) {
                 case "verysparse":
                     requiredSupport -= (int)(ShiftySettingsSystem.Settings.GrassCoverBonus * 0.33f);
-                    BearsShiftyEarthModSystem.Logger.Notification($"Block with code ${block.Code} has a grass support bonus of {(int)(ShiftySettingsSystem.Settings.GrassCoverBonus * 0.33f)}");
                     break;
 
                 case "sparse":
                     requiredSupport -= (int)(ShiftySettingsSystem.Settings.GrassCoverBonus * 0.66f);
-                    BearsShiftyEarthModSystem.Logger.Notification($"Block with code ${block.Code} has a grass support bonus of {(int)(ShiftySettingsSystem.Settings.GrassCoverBonus * 0.66f)}");
                     break;
 
                 case "normal":
                     requiredSupport -= ShiftySettingsSystem.Settings.GrassCoverBonus;
-                    BearsShiftyEarthModSystem.Logger.Notification($"Block with code ${block.Code} has a grass support bonus of {ShiftySettingsSystem.Settings.GrassCoverBonus}");
                     break;
 
                 default:
@@ -102,14 +99,10 @@ namespace BearsShiftyEarth
         /// </summary>
         public override void OnBlockPlaced(IWorldAccessor world, BlockPos blockPos, ref EnumHandling handling)
         {
-            // skip all custom logic if we are not a shifty block.
-            if (!isShifty) {
+            // skip all custom logic if we are not a shifty block, or fall if we are a shifty block but unstable.
+            if (!isShifty || IsUnstable(world, blockPos)) {
                 base.OnBlockPlaced(world, blockPos, ref handling);
             }
-
-            // TODO: obviously we want our own custom code in here eventually
-
-            base.OnBlockPlaced(world, blockPos, ref handling);
         }
 
         /// <summary>
@@ -118,13 +111,9 @@ namespace BearsShiftyEarth
         public override void OnNeighbourBlockChange(IWorldAccessor world, BlockPos pos, BlockPos neibpos, ref EnumHandling handling)
         {
             // default to vanilla if we are not a shifty block
-            if (!isShifty) {
+            if (!isShifty || IsUnstable(world, pos)) {
                 base.OnNeighbourBlockChange(world, pos, neibpos, ref handling);
             }
-
-            // TODO: Custom code redirects go here
-
-            base.OnNeighbourBlockChange(world, pos, neibpos, ref handling);
         }
 
         /// <summary>
@@ -149,18 +138,20 @@ namespace BearsShiftyEarth
                 scanPos = new BlockPos(pos.dimension);
             }
 
-            int support = 0;
-
-            // Check if it's raining so we can get any penalties applied so we can still early-out
-            //if (world.)
+            int effectiveSupport = 0;
 
             IBlockAccessor blockAccessor = world.GetLockFreeBlockAccessor();
+
+            // if we are exposed to the sky, penalize support based on the amount of rainfall.
+            if (blockAccessor.GetRainMapHeightAt(pos.X, pos.Z) <= pos.Y) {
+                effectiveSupport += (int)world.BlockAccessor.GetClimateAt(pos).Rainfall * rainPenalty;
+            }
 
             // check for support below
             _ = scanPos.Set(pos.X, pos.Y - 1, pos.Z);
             if (blockAccessor.GetBlock(scanPos).SideSolid[BlockFacing.UP.Index]) {
-                support += 15;
-                if (support >= requiredSupport) {
+                effectiveSupport += 15;
+                if (effectiveSupport >= requiredSupport) {
                     return false;
                 }
             }
@@ -171,6 +162,19 @@ namespace BearsShiftyEarth
                 _ = scanPos.Set(pos.X + blockFacing.Normali.X, pos.Y, pos.Z + blockFacing.Normali.Z);
 
                 if (blockAccessor.GetBlock(scanPos).SideSolid[blockFacing.Opposite.Index]) {
+                    effectiveSupport += 10;
+                    if (effectiveSupport >= requiredSupport) {
+                        return false;
+                    }
+                }
+            }
+
+            // if we're still not supported, check for a plant on top
+            _ = scanPos.Set(pos.X, pos.Y + 1, pos.Z);
+            if (blockAccessor.GetBlock(scanPos) is BlockPlant or BlockCrop) {
+                effectiveSupport += plantBonus;
+                if (effectiveSupport >= requiredSupport) {
+                    return false;
                 }
             }
 
