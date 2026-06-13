@@ -6,6 +6,9 @@ using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
 using Vintagestory.GameContent;
 
+using Config = BearsShiftyEarth.ShiftySettingsSystem;
+using ModMain = BearsShiftyEarth.BearsShiftyEarthModSystem;
+
 namespace BearsShiftyEarth
 {
     /// <summary>
@@ -40,36 +43,36 @@ namespace BearsShiftyEarth
             base.Initialize(properties);
 
             // make sure we're only being shifty with certain blocks
-            (isShifty, BearsShiftyEarthModSystem.EarthType shiftyType) = IsWhatShiftyBlock(block);
+            (isShifty, EarthType shiftyType) = IsWhatShiftyBlock(block);
 
             if (!isShifty) {
                 return;
             }
 
-            requiredSupport = ShiftySettingsSystem.Settings.SupportRequired;
-            plantBonus = ShiftySettingsSystem.Settings.PlantHostBonus;
+            requiredSupport = Config.Settings.SupportRequired;
+            plantBonus = Config.Settings.PlantHostBonus;
 
             // set properties based on configured settings
             // penalties and bonuses are cached and precalculated for improved performance
             switch (shiftyType) {
-                case BearsShiftyEarthModSystem.EarthType.NONE:
+                case EarthType.NONE:
                     break;
 
-                case BearsShiftyEarthModSystem.EarthType.Soil:
-                    rainPenalty = ShiftySettingsSystem.Settings.MaximumSoilStormPenalty;
-                    _ = SetFallChance(ShiftySettingsSystem.Settings.SoilFallChance);
+                case EarthType.Soil:
+                    rainPenalty = Config.Settings.MaximumSoilStormPenalty;
+                    _ = SetFallChance(Config.Settings.SoilFallChance);
                     break;
 
-                case BearsShiftyEarthModSystem.EarthType.Clay:
-                    requiredSupport -= ShiftySettingsSystem.Settings.ClayModifier;
-                    rainPenalty = ShiftySettingsSystem.Settings.MaximumClayStormPenalty;
-                    _ = SetFallChance(ShiftySettingsSystem.Settings.ClayFallChance);
+                case EarthType.Clay:
+                    requiredSupport -= Config.Settings.ClayModifier;
+                    rainPenalty = Config.Settings.MaximumClayStormPenalty;
+                    _ = SetFallChance(Config.Settings.ClayFallChance);
                     break;
 
-                case BearsShiftyEarthModSystem.EarthType.Peat:
-                    requiredSupport -= ShiftySettingsSystem.Settings.PeatModifier;
-                    rainPenalty = ShiftySettingsSystem.Settings.MaximumPeatStormPenalty;
-                    _ = SetFallChance(ShiftySettingsSystem.Settings.PeatFallChance);
+                case EarthType.Peat:
+                    requiredSupport -= Config.Settings.PeatModifier;
+                    rainPenalty = Config.Settings.MaximumPeatStormPenalty;
+                    _ = SetFallChance(Config.Settings.PeatFallChance);
                     break;
 
                 default:
@@ -79,15 +82,15 @@ namespace BearsShiftyEarth
             // check for grass coverage
             switch (block.LastCodePart()) {
                 case "verysparse":
-                    requiredSupport -= (int)(ShiftySettingsSystem.Settings.GrassCoverBonus * 0.33f);
+                    requiredSupport -= (int)(Config.Settings.GrassCoverBonus * 0.33f);
                     break;
 
                 case "sparse":
-                    requiredSupport -= (int)(ShiftySettingsSystem.Settings.GrassCoverBonus * 0.66f);
+                    requiredSupport -= (int)(Config.Settings.GrassCoverBonus * 0.66f);
                     break;
 
                 case "normal":
-                    requiredSupport -= ShiftySettingsSystem.Settings.GrassCoverBonus;
+                    requiredSupport -= Config.Settings.GrassCoverBonus;
                     break;
 
                 default:
@@ -124,13 +127,13 @@ namespace BearsShiftyEarth
         /// <summary>
         /// Checks to see if the block is configured to be a shifty block and should have our custom logic applied. Returns true if it should be targeted by custom logic, false if it behaves as vanilla.
         /// </summary>
-        public (bool, BearsShiftyEarthModSystem.EarthType) IsWhatShiftyBlock(Block block)
+        public (bool, EarthType) IsWhatShiftyBlock(Block block)
         {
             return block.FirstCodePart() switch {
-                "soil" => (true, BearsShiftyEarthModSystem.EarthType.Soil),
-                "peat" => (true, BearsShiftyEarthModSystem.EarthType.Clay),
-                "rawclay" => (true, BearsShiftyEarthModSystem.EarthType.Peat),
-                _ => (false, BearsShiftyEarthModSystem.EarthType.NONE),
+                "soil" => (true, EarthType.Soil),
+                "peat" => (true, EarthType.Peat),
+                "rawclay" => (true, EarthType.Clay),
+                _ => (false, EarthType.NONE),
             };
         }
 
@@ -152,7 +155,7 @@ namespace BearsShiftyEarth
             if (blockAccessor.GetRainMapHeightAt(pos.X, pos.Z) <= pos.Y) {
                 effectiveSupport += (int)world.BlockAccessor.GetClimateAt(pos).Rainfall * rainPenalty;
 #if DEBUG
-                BearsShiftyEarthModSystem.Logger?.Chat($"Block ${block.Code} has rain penalty of {effectiveSupport}");
+                ModMain.Logger?.Chat($"Block ${block.Code} has rain penalty of {effectiveSupport}");
 #endif
             }
 
@@ -161,7 +164,7 @@ namespace BearsShiftyEarth
             if (blockAccessor.GetBlock(scanPos).SideSolid[BlockFacing.UP.Index]) {
                 effectiveSupport += 15;
 #if DEBUG
-                BearsShiftyEarthModSystem.Logger?.Chat($"Block ${block.Code} has block beneath, current support is {effectiveSupport}");
+                ModMain.Logger?.Chat($"Block ${block.Code} has block beneath, current support is {effectiveSupport}");
 #endif
                 if (effectiveSupport >= requiredSupport) {
                     return false;
@@ -176,7 +179,7 @@ namespace BearsShiftyEarth
                 if (blockAccessor.GetBlock(scanPos).SideSolid[blockFacing.Opposite.Index]) {
                     effectiveSupport += 10;
 #if DEBUG
-                    BearsShiftyEarthModSystem.Logger?.Chat($"Block ${block.Code} has solid block at face {BlockFacing.HORIZONTALS[i]}, current support is {effectiveSupport}");
+                    ModMain.Logger?.Chat($"Block ${block.Code} has solid block at face {BlockFacing.HORIZONTALS[i]}, current support is {effectiveSupport}");
 #endif
                     if (effectiveSupport >= requiredSupport) {
                         return false;
@@ -189,7 +192,8 @@ namespace BearsShiftyEarth
             if (blockAccessor.GetBlock(scanPos) is BlockPlant or BlockCrop) {
                 effectiveSupport += plantBonus;
 #if DEBUG
-                BearsShiftyEarthModSystem.Logger?.Chat($"Block ${block.Code} has plant on top, current support is {effectiveSupport}");
+                ModMain.Logger?.Chat($"Block ${block.Code} has plant on top, current support is {effectiveSupport}");
+
 #endif
                 if (effectiveSupport >= requiredSupport) {
                     return false;
@@ -208,11 +212,13 @@ namespace BearsShiftyEarth
             FieldInfo? chanceField = typeof(BlockBehaviorUnstableFalling).GetField("fallSidewaysChance", BindingFlags.NonPublic | BindingFlags.Instance);
 
             if (chanceField == null) {
-                BearsShiftyEarthModSystem.Logger?.Error(Lang.Get("bearsshiftyearth:error-reflection-fallchance"));
+                ModMain.Logger?.Error(Lang.Get("bearsshiftyearth:error-reflection-fallchance"));
                 return false;
             }
 
             chanceField.SetValue(this, newChance);
+
+            ModMain.Logger?.Chat($"Block ${block.Code} has a fall chance of {chanceField?.GetValue(this)?.ToString()}");
 
             return true;
         }
