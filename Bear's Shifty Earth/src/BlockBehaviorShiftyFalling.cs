@@ -23,6 +23,9 @@ namespace BearsShiftyEarth
 
         private bool isShifty = false;
         private int requiredSupport;
+        private int adjacentSupport;
+        private int belowSupport;
+        private int topSupport;
         private int rainPenalty;
         private int plantBonus;
 
@@ -38,6 +41,9 @@ namespace BearsShiftyEarth
 
         #region Methods
 
+        /// <summary>
+        /// As the block is finalized, configure and precache as much of the fiddly little options as possible.
+        /// </summary>
         public override void Initialize(JsonObject properties)
         {
             base.Initialize(properties);
@@ -49,48 +55,74 @@ namespace BearsShiftyEarth
                 return;
             }
 
-            requiredSupport = Config.Settings.SupportRequired;
+            // one of the only options not earth-typed. Grass is precached based on the block code later.
             plantBonus = Config.Settings.PlantHostBonus;
 
             // set properties based on configured settings
             // penalties and bonuses are cached and precalculated for improved performance
+            // HACK: Definitely clean up this nightmare switch. Disabled falling logic should remove the behavior instead, this is just a quick and dirty version
             switch (shiftyType) {
                 case EarthType.NONE:
                     break;
 
                 case EarthType.Soil:
-                    rainPenalty = Config.Settings.MaximumSoilStormPenalty;
-                    _ = SetFallChance(Config.Settings.SoilFallChance);
+                    if (Config.Settings.SoilBehavior is ShiftySettings.FallingBehaviorFlag.Vanilla) {
+                        isShifty = false;
+                    }
+                    else if (Config.Settings.SoilBehavior is ShiftySettings.FallingBehaviorFlag.Disabled) {
+                        requiredSupport = -100; // setting support to an absurdly low number prevents the vanilla logic from ever triggering
+                    }
+                    else {
+                        requiredSupport = Config.Settings.SoilSupportRequired;
+                        adjacentSupport = Config.Settings.SoilAdjacentSupport;
+                        belowSupport = Config.Settings.SoilBelowSupport;
+                        topSupport = Config.Settings.SoilAboveSupport;
+                        rainPenalty = Config.Settings.MaximumSoilStormPenalty;
+                        _ = SetFallChance(Config.Settings.SoilFallChance);
+                    }
                     break;
 
                 case EarthType.Clay:
-                    requiredSupport -= Config.Settings.ClayModifier;
-                    rainPenalty = Config.Settings.MaximumClayStormPenalty;
-                    _ = SetFallChance(Config.Settings.ClayFallChance);
+                    if (Config.Settings.ClayBehavior is ShiftySettings.FallingBehaviorFlag.Vanilla or ShiftySettings.FallingBehaviorFlag.Disabled) {
+                        requiredSupport = -100; // in case it somehow falls through the earlier behavior assignment
+                    }
+                    else {
+                        requiredSupport = Config.Settings.ClaySupportRequired;
+                        adjacentSupport = Config.Settings.ClayAdjacentSupport;
+                        belowSupport = Config.Settings.ClayBelowSupport;
+                        topSupport = Config.Settings.ClayAboveSupport;
+                        rainPenalty = Config.Settings.MaximumClayStormPenalty;
+                        _ = SetFallChance(Config.Settings.ClayFallChance);
+                    }
                     break;
 
                 case EarthType.Peat:
-                    requiredSupport -= Config.Settings.PeatModifier;
-                    rainPenalty = Config.Settings.MaximumPeatStormPenalty;
-                    _ = SetFallChance(Config.Settings.PeatFallChance);
+                    if (Config.Settings.PeatBehavior is ShiftySettings.FallingBehaviorFlag.Vanilla) {
+                        isShifty = false;
+                    }
+                    else if (Config.Settings.PeatBehavior is ShiftySettings.FallingBehaviorFlag.Disabled) {
+                        requiredSupport = -100;
+                    }
+                    else {
+                        requiredSupport = Config.Settings.PeatSupportRequired;
+                        adjacentSupport = Config.Settings.PeatAdjacentSupport;
+                        belowSupport = Config.Settings.PeatBelowSupport;
+                        topSupport = Config.Settings.PeatAboveSupport;
+                        rainPenalty = Config.Settings.MaximumPeatStormPenalty;
+                        _ = SetFallChance(Config.Settings.PeatFallChance);
+                    }
                     break;
 
-                default:
-                    break;
-            }
-
-            // check for grass coverage
-            switch (block.LastCodePart()) {
-                case "verysparse":
-                    requiredSupport -= (int)(Config.Settings.GrassCoverBonus * 0.33f);
-                    break;
-
-                case "sparse":
-                    requiredSupport -= (int)(Config.Settings.GrassCoverBonus * 0.66f);
-                    break;
-
-                case "normal":
-                    requiredSupport -= Config.Settings.GrassCoverBonus;
+                case EarthType.Farmland:
+                    if (Config.Settings.FarmlandBehavior is ShiftySettings.FallingBehaviorFlag.Vanilla or ShiftySettings.FallingBehaviorFlag.Disabled) {
+                        requiredSupport = -100; // in case it somehow falls through the earlier behavior assignment
+                    }
+                    requiredSupport = Config.Settings.FarmSupportRequired;
+                    adjacentSupport = Config.Settings.FarmAdjacentSupport;
+                    belowSupport = Config.Settings.FarmBelowSupport;
+                    topSupport = Config.Settings.FarmAboveSupport;
+                    rainPenalty = Config.Settings.MaximumFarmStormPenalty;
+                    _ = SetFallChance(Config.Settings.FarmFallChance);
                     break;
 
                 default:
@@ -125,19 +157,6 @@ namespace BearsShiftyEarth
         }
 
         /// <summary>
-        /// Checks to see if the block is configured to be a shifty block and should have our custom logic applied. Returns true if it should be targeted by custom logic, false if it behaves as vanilla.
-        /// </summary>
-        public (bool, EarthType) IsWhatShiftyBlock(Block block)
-        {
-            return block.FirstCodePart() switch {
-                "soil" => (true, EarthType.Soil),
-                "peat" => (true, EarthType.Peat),
-                "rawclay" => (true, EarthType.Clay),
-                _ => (false, EarthType.NONE),
-            };
-        }
-
-        /// <summary>
         /// Determines if a block is unstable or stable. If true, the block is unstable and at risk of falling. If true, the block is stable and will not attempt to fall.
         /// </summary>
         public bool IsUnstable(IWorldAccessor world, BlockPos pos)
@@ -154,18 +173,18 @@ namespace BearsShiftyEarth
             // trigger any penalty, I've noticed, so no need for special logic there
             if (blockAccessor.GetRainMapHeightAt(pos.X, pos.Z) <= pos.Y) {
                 effectiveSupport += (int)world.BlockAccessor.GetClimateAt(pos).Rainfall * rainPenalty;
-#if DEBUG
-                ModMain.Logger?.Chat($"Block ${block.Code} has rain penalty of {effectiveSupport}");
-#endif
+                //#if DEBUG
+                //                ModMain.Logger?.Chat($"Block ${block.Code} has rain penalty of {effectiveSupport}");
+                //#endif
             }
 
             // check for support below
             _ = scanPos.Set(pos.X, pos.Y - 1, pos.Z);
             if (blockAccessor.GetBlock(scanPos).SideSolid[BlockFacing.UP.Index]) {
                 effectiveSupport += 15;
-#if DEBUG
-                ModMain.Logger?.Chat($"Block ${block.Code} has block beneath, current support is {effectiveSupport}");
-#endif
+                //#if DEBUG
+                //                ModMain.Logger?.Chat($"Block ${block.Code} has block beneath, current support is {effectiveSupport}");
+                //#endif
                 if (effectiveSupport >= requiredSupport) {
                     return false;
                 }
@@ -178,9 +197,9 @@ namespace BearsShiftyEarth
 
                 if (blockAccessor.GetBlock(scanPos).SideSolid[blockFacing.Opposite.Index]) {
                     effectiveSupport += 10;
-#if DEBUG
-                    ModMain.Logger?.Chat($"Block ${block.Code} has solid block at face {BlockFacing.HORIZONTALS[i]}, current support is {effectiveSupport}");
-#endif
+                    //#if DEBUG
+                    //                    ModMain.Logger?.Chat($"Block ${block.Code} has solid block at face {BlockFacing.HORIZONTALS[i]}, current support is {effectiveSupport}");
+                    //#endif
                     if (effectiveSupport >= requiredSupport) {
                         return false;
                     }
@@ -191,10 +210,10 @@ namespace BearsShiftyEarth
             _ = scanPos.Set(pos.X, pos.Y + 1, pos.Z);
             if (blockAccessor.GetBlock(scanPos) is BlockPlant or BlockCrop) {
                 effectiveSupport += plantBonus;
-#if DEBUG
-                ModMain.Logger?.Chat($"Block ${block.Code} has plant on top, current support is {effectiveSupport}");
+                //#if DEBUG
+                //                ModMain.Logger?.Chat($"Block ${block.Code} has plant on top, current support is {effectiveSupport}");
 
-#endif
+                //#endif
                 if (effectiveSupport >= requiredSupport) {
                     return false;
                 }
@@ -203,8 +222,50 @@ namespace BearsShiftyEarth
             return true;
         }
 
+        #endregion Methods
+
+        #region Helper Functions
+
         /// <summary>
-        /// The actual chance to fall is stored in a private field, so we can't access it even as a child class. This uses the dark magic of reflection to access and set it anyway.
+        /// Checks to see if the block is configured to be a shifty block and should have our custom logic applied. Returns true if it should be targeted by custom logic, false if it behaves as vanilla.
+        /// </summary>
+        public (bool, EarthType) IsWhatShiftyBlock(Block block)
+        {
+            return block.FirstCodePart() switch {
+                BlockCodes.SOIL_CODE => (true, EarthType.Soil),
+                BlockCodes.PEAT_CODE => (true, EarthType.Peat),
+                BlockCodes.CLAY_CODE => (true, EarthType.Clay),
+                BlockCodes.FARM_CODE => (true, EarthType.Farmland),
+                _ => (false, EarthType.NONE),
+            };
+        }
+
+        /// <summary>
+        /// Bakes the grass coverage bonus into the block's behavior as a reduction to the required support.
+        /// </summary>
+        public void AddGrassCoverageSupport(Block block)
+        {
+            // check for grass coverage
+            switch (block.LastCodePart()) {
+                case BlockCodes.SPARSE_GRASS_CODE:
+                    requiredSupport -= (int)(Config.Settings.GrassCoverBonus * 0.33f);
+                    break;
+
+                case BlockCodes.PATCHY_GRASS_CODE:
+                    requiredSupport -= (int)(Config.Settings.GrassCoverBonus * 0.66f);
+                    break;
+
+                case BlockCodes.GRASSY_GRASS_CODE:
+                    requiredSupport -= Config.Settings.GrassCoverBonus;
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// The actual chance to fall is stored in a private field, so we can't access it even as a child class. This uses the sinister, forbidden magic of reflection to access and set it anyway.
         /// Returns true if the fall chance was successfully set, false if there was a problem, just in case branching logic is desired later.
         /// </summary>
         private bool SetFallChance(float newChance)
@@ -218,11 +279,11 @@ namespace BearsShiftyEarth
 
             chanceField.SetValue(this, newChance);
 
-            ModMain.Logger?.Chat($"Block ${block.Code} has a fall chance of {chanceField?.GetValue(this)?.ToString()}");
+            //ModMain.Logger?.Chat($"Block ${block.Code} has a fall chance of {chanceField?.GetValue(this)?.ToString()}");
 
             return true;
         }
 
-        #endregion Methods
+        #endregion Helper Functions
     }
 }

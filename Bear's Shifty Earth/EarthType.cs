@@ -5,6 +5,7 @@
         NONE,
         Soil,
         Clay,
-        Peat
+        Peat,
+        Farmland
     }
 }
