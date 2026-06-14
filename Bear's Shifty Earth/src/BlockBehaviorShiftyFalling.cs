@@ -78,6 +78,7 @@ namespace BearsShiftyEarth
                         belowSupport = Config.Settings.SoilBelowSupport;
                         topSupport = Config.Settings.SoilAboveSupport;
                         rainPenalty = Config.Settings.MaximumSoilStormPenalty;
+                        fallSideways = true;
                         _ = SetFallChance(Config.Settings.SoilFallChance);
                     }
                     break;
@@ -92,6 +93,7 @@ namespace BearsShiftyEarth
                         belowSupport = Config.Settings.ClayBelowSupport;
                         topSupport = Config.Settings.ClayAboveSupport;
                         rainPenalty = Config.Settings.MaximumClayStormPenalty;
+                        fallSideways = true;
                         _ = SetFallChance(Config.Settings.ClayFallChance);
                     }
                     break;
@@ -109,6 +111,7 @@ namespace BearsShiftyEarth
                         belowSupport = Config.Settings.PeatBelowSupport;
                         topSupport = Config.Settings.PeatAboveSupport;
                         rainPenalty = Config.Settings.MaximumPeatStormPenalty;
+                        fallSideways = true;
                         _ = SetFallChance(Config.Settings.PeatFallChance);
                     }
                     break;
@@ -122,6 +125,7 @@ namespace BearsShiftyEarth
                     belowSupport = Config.Settings.FarmBelowSupport;
                     topSupport = Config.Settings.FarmAboveSupport;
                     rainPenalty = Config.Settings.MaximumFarmStormPenalty;
+                    fallSideways = true;
                     _ = SetFallChance(Config.Settings.FarmFallChance);
                     break;
 
