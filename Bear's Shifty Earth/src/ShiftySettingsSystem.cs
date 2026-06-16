@@ -47,10 +47,10 @@ namespace BearsShiftyEarth
         public int GrassCoverBonus { get; set; } = 5;
         public int PlantHostBonus { get; set; } = 10;
         public string EnvironmentComment { get => "MaximumStormPenalty is a penalty to support given to any block exposed to heavy rain. This penalty is scaled down for less intense rain. By default, clay is sturdier than soil when dry but becomes LESS sturdy when wet. Peat is naturally very sludgy and becomes nearly impossible to support when wet. Farmland similarly absorbs water readily and becomes mud."; }
-        public int MaximumSoilStormPenalty { get; set; } = -15;
-        public int MaximumClayStormPenalty { get; set; } = -20;
-        public int MaximumPeatStormPenalty { get; set; } = -25;
-        public int MaximumFarmStormPenalty { get; set; } = -25;
+        public int MaximumSoilStormPenalty { get; set; } = -25;
+        public int MaximumClayStormPenalty { get; set; } = -30;
+        public int MaximumPeatStormPenalty { get; set; } = -40;
+        public int MaximumFarmStormPenalty { get; set; } = -30;
         public string FallChanceComment { get => "If not properly supported, what chance should each earth type have of falling when triggered. Expressed as a decimal between 0 and 1."; }
         public float SoilFallChance { get; set; } = 0.4f;
         public float ClayFallChance { get; set; } = 0.4f;
