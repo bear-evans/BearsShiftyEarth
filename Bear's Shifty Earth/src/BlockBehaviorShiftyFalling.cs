@@ -143,6 +143,10 @@ namespace BearsShiftyEarth
         /// </summary>
         public override void OnBlockPlaced(IWorldAccessor world, BlockPos blockPos, ref EnumHandling handling)
         {
+            if (world.Side == EnumAppSide.Client) {
+                return;
+            }
+
             // skip all custom logic if we are not a shifty block, or fall if we are a shifty block but unstable.
             if (!isShifty || IsUnstable(world, blockPos)) {
                 base.OnBlockPlaced(world, blockPos, ref handling);
@@ -154,6 +158,10 @@ namespace BearsShiftyEarth
         /// </summary>
         public override void OnNeighbourBlockChange(IWorldAccessor world, BlockPos pos, BlockPos neibpos, ref EnumHandling handling)
         {
+            if (world.Side == EnumAppSide.Client) {
+                return;
+            }
+
             // default to vanilla if we are not a shifty block or do vanilla if we ARE a shifty block
             if (!isShifty || IsUnstable(world, pos)) {
                 base.OnNeighbourBlockChange(world, pos, neibpos, ref handling);
@@ -165,6 +173,9 @@ namespace BearsShiftyEarth
         /// </summary>
         public bool IsUnstable(IWorldAccessor world, BlockPos pos)
         {
+            // skip this if we obviously want it to be permanently stable
+            if (requiredSupport <= -100) { return false; }
+
             if (scanPos == null) {
                 scanPos = new BlockPos(pos.dimension);
             }
@@ -177,18 +188,12 @@ namespace BearsShiftyEarth
             // trigger any penalty, I've noticed, so no need for special logic there
             if (blockAccessor.GetRainMapHeightAt(pos.X, pos.Z) <= pos.Y) {
                 effectiveSupport += (int)world.BlockAccessor.GetClimateAt(pos).Rainfall * rainPenalty;
-                //#if DEBUG
-                //                ModMain.Logger?.Chat($"Block ${block.Code} has rain penalty of {effectiveSupport}");
-                //#endif
             }
 
             // check for support below
             _ = scanPos.Set(pos.X, pos.Y - 1, pos.Z);
             if (blockAccessor.GetBlock(scanPos).SideSolid[BlockFacing.UP.Index]) {
-                effectiveSupport += 15;
-                //#if DEBUG
-                //                ModMain.Logger?.Chat($"Block ${block.Code} has block beneath, current support is {effectiveSupport}");
-                //#endif
+                effectiveSupport += belowSupport;
                 if (effectiveSupport >= requiredSupport) {
                     return false;
                 }
@@ -200,24 +205,25 @@ namespace BearsShiftyEarth
                 _ = scanPos.Set(pos.X + blockFacing.Normali.X, pos.Y, pos.Z + blockFacing.Normali.Z);
 
                 if (blockAccessor.GetBlock(scanPos).SideSolid[blockFacing.Opposite.Index]) {
-                    effectiveSupport += 10;
-                    //#if DEBUG
-                    //                    ModMain.Logger?.Chat($"Block ${block.Code} has solid block at face {BlockFacing.HORIZONTALS[i]}, current support is {effectiveSupport}");
-                    //#endif
+                    effectiveSupport += adjacentSupport;
                     if (effectiveSupport >= requiredSupport) {
                         return false;
                     }
                 }
             }
 
-            // if we're still not supported, check for a plant on top
+            // add solid top face
             _ = scanPos.Set(pos.X, pos.Y + 1, pos.Z);
+            if (blockAccessor.GetBlock(scanPos).SideSolid[BlockFacing.DOWN.Index]) {
+                effectiveSupport += topSupport;
+                if (effectiveSupport >= requiredSupport) {
+                    return false;
+                }
+            }
+
+            // if we're still not supported, check for a plant on top
             if (blockAccessor.GetBlock(scanPos) is BlockPlant or BlockCrop) {
                 effectiveSupport += plantBonus;
-                //#if DEBUG
-                //                ModMain.Logger?.Chat($"Block ${block.Code} has plant on top, current support is {effectiveSupport}");
-
-                //#endif
                 if (effectiveSupport >= requiredSupport) {
                     return false;
                 }

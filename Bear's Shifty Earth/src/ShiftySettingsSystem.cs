@@ -108,8 +108,9 @@ namespace BearsShiftyEarth
                 if (SETTINGS == null) {
                     Mod.Logger.Notification(Lang.Get("bearsshiftyearth:settings-initializing-file"));
                     SETTINGS = new ShiftySettings();
-                    api.StoreModConfig<ShiftySettings>(SETTINGS, SettingsFilename);
                 }
+
+                api.StoreModConfig<ShiftySettings>(SETTINGS, SettingsFilename);
             }
             catch (System.Exception ex) {
                 Mod.Logger.Error($"{Lang.Get("bearsshiftyearth:settings-load-error")} | {ex.Message}");
