@@ -10,40 +10,28 @@ namespace BearsShiftyEarth
     /// </summary>
     public class BearsShiftyEarthModSystem : ModSystem
     {
-        #region Enums
-
-        #endregion Enums
-
-        #region Properties
-
-        public static ICoreAPI? Api { get => API; }
-        public static ILogger? Logger { get => LOGGER; }
-
-        #endregion Properties
-
-        #region Fields
-
-        private static ICoreAPI? API;
-        private static ILogger? LOGGER;
-
-        #endregion Fields
-
         #region Methods
 
         // Called on server and client
         // Useful for registering block/entity classes on both sides
         public override void Start(ICoreAPI api)
         {
-            // save references for use by the block behavior
-            API = api;
-            LOGGER = Mod.Logger;
-
-            // We register our custom behavior under the default behavior's name to route the logic through us
-            api.RegisterBlockBehaviorClass("UnstableFalling", typeof(BlockBehaviorShiftyFalling));
+            // Only do this if the user wants soil instability in this world
+            string blockGravity = api.World.Config.GetString("blockGravity", "sandgravel");
+            if (blockGravity == "sandgravelsoil") {
+                // We register our custom behavior under the default behavior's name to route the logic through us
+                api.RegisterBlockBehaviorClass("UnstableFalling", typeof(BlockBehaviorShiftyFalling));
+            }
         }
 
         public override void AssetsFinalize(ICoreAPI api)
         {
+            // Only do this if the user wants soil instability in this world
+            string blockGravity = api.World.Config.GetString("blockGravity", "sandgravel");
+            if (blockGravity != "sandgravelsoil") {
+                return;
+            }
+
             string blockCode;
             foreach (Block block in api.World.Blocks) {
                 // Check if we should enable the block logic for clay and farmland

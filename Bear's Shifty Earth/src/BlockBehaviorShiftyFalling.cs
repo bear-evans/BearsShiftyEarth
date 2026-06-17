@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Reflection;
 using Vintagestory.API.Common;
-using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
 using Vintagestory.GameContent;
 
 using Config = BearsShiftyEarth.ShiftySettingsSystem;
-using ModMain = BearsShiftyEarth.BearsShiftyEarthModSystem;
 
 namespace BearsShiftyEarth
 {
@@ -283,7 +281,6 @@ namespace BearsShiftyEarth
             FieldInfo? chanceField = typeof(BlockBehaviorUnstableFalling).GetField("fallSidewaysChance", BindingFlags.NonPublic | BindingFlags.Instance);
 
             if (chanceField == null) {
-                ModMain.Logger?.Error(Lang.Get("bearsshiftyearth:error-reflection-fallchance"));
                 return false;
             }
 
