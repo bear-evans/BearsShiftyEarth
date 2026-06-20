@@ -5,8 +5,6 @@ using Vintagestory.API.Datastructures;
 using Vintagestory.API.MathTools;
 using Vintagestory.GameContent;
 
-using Config = BearsShiftyEarth.ShiftySettingsSystem;
-
 namespace BearsShiftyEarth
 {
     /// <summary>
@@ -45,91 +43,6 @@ namespace BearsShiftyEarth
         public override void Initialize(JsonObject properties)
         {
             base.Initialize(properties);
-
-            // make sure we're only being shifty with certain blocks
-            (isShifty, EarthType shiftyType) = IsWhatShiftyBlock(block);
-
-            if (!isShifty) {
-                return;
-            }
-
-            // one of the only options not earth-typed. Grass is precached based on the block code later.
-            plantBonus = Config.Settings.PlantHostBonus;
-
-            // set properties based on configured settings
-            // penalties and bonuses are cached and precalculated for improved performance
-            // HACK: Definitely clean up this nightmare switch. Disabled falling logic should remove the behavior instead, this is just a quick and dirty version
-            switch (shiftyType) {
-                case EarthType.NONE:
-                    break;
-
-                case EarthType.Soil:
-                    if (Config.Settings.SoilBehavior is ShiftySettings.FallingBehaviorFlag.Vanilla) {
-                        isShifty = false;
-                    }
-                    else if (Config.Settings.SoilBehavior is ShiftySettings.FallingBehaviorFlag.Disabled) {
-                        requiredSupport = -100; // setting support to an absurdly low number prevents the vanilla logic from ever triggering
-                    }
-                    else {
-                        requiredSupport = Config.Settings.SoilSupportRequired;
-                        adjacentSupport = Config.Settings.SoilAdjacentSupport;
-                        belowSupport = Config.Settings.SoilBelowSupport;
-                        topSupport = Config.Settings.SoilAboveSupport;
-                        rainPenalty = Config.Settings.MaximumSoilStormPenalty;
-                        fallSideways = true;
-                        _ = SetFallChance(Config.Settings.SoilFallChance);
-                    }
-                    break;
-
-                case EarthType.Clay:
-                    if (Config.Settings.ClayBehavior is ShiftySettings.FallingBehaviorFlag.Vanilla or ShiftySettings.FallingBehaviorFlag.Disabled) {
-                        requiredSupport = -100; // in case it somehow falls through the earlier behavior assignment
-                    }
-                    else {
-                        requiredSupport = Config.Settings.ClaySupportRequired;
-                        adjacentSupport = Config.Settings.ClayAdjacentSupport;
-                        belowSupport = Config.Settings.ClayBelowSupport;
-                        topSupport = Config.Settings.ClayAboveSupport;
-                        rainPenalty = Config.Settings.MaximumClayStormPenalty;
-                        fallSideways = true;
-                        _ = SetFallChance(Config.Settings.ClayFallChance);
-                    }
-                    break;
-
-                case EarthType.Peat:
-                    if (Config.Settings.PeatBehavior is ShiftySettings.FallingBehaviorFlag.Vanilla) {
-                        isShifty = false;
-                    }
-                    else if (Config.Settings.PeatBehavior is ShiftySettings.FallingBehaviorFlag.Disabled) {
-                        requiredSupport = -100;
-                    }
-                    else {
-                        requiredSupport = Config.Settings.PeatSupportRequired;
-                        adjacentSupport = Config.Settings.PeatAdjacentSupport;
-                        belowSupport = Config.Settings.PeatBelowSupport;
-                        topSupport = Config.Settings.PeatAboveSupport;
-                        rainPenalty = Config.Settings.MaximumPeatStormPenalty;
-                        fallSideways = true;
-                        _ = SetFallChance(Config.Settings.PeatFallChance);
-                    }
-                    break;
-
-                case EarthType.Farmland:
-                    if (Config.Settings.FarmlandBehavior is ShiftySettings.FallingBehaviorFlag.Vanilla or ShiftySettings.FallingBehaviorFlag.Disabled) {
-                        requiredSupport = -100; // in case it somehow falls through the earlier behavior assignment
-                    }
-                    requiredSupport = Config.Settings.FarmSupportRequired;
-                    adjacentSupport = Config.Settings.FarmAdjacentSupport;
-                    belowSupport = Config.Settings.FarmBelowSupport;
-                    topSupport = Config.Settings.FarmAboveSupport;
-                    rainPenalty = Config.Settings.MaximumFarmStormPenalty;
-                    fallSideways = true;
-                    _ = SetFallChance(Config.Settings.FarmFallChance);
-                    break;
-
-                default:
-                    break;
-            }
         }
 
         #endregion Methods
@@ -237,13 +150,14 @@ namespace BearsShiftyEarth
         /// <summary>
         /// Checks to see if the block is configured to be a shifty block and should have our custom logic applied. Returns true if it should be targeted by custom logic, false if it behaves as vanilla.
         /// </summary>
-        public (bool, EarthType) IsWhatShiftyBlock(Block block)
+        public (bool, EarthType) IsWhatShiftyBlock()
         {
             return block.FirstCodePart() switch {
                 BlockCodes.SOIL_CODE => (true, EarthType.Soil),
                 BlockCodes.PEAT_CODE => (true, EarthType.Peat),
                 BlockCodes.CLAY_CODE => (true, EarthType.Clay),
                 BlockCodes.FARM_CODE => (true, EarthType.Farmland),
+                BlockCodes.FORESTFLOOR_CODE => (true, EarthType.Soil),
                 _ => (false, EarthType.NONE),
             };
         }
@@ -251,25 +165,170 @@ namespace BearsShiftyEarth
         /// <summary>
         /// Bakes the grass coverage bonus into the block's behavior as a reduction to the required support.
         /// </summary>
-        public void AddGrassCoverageSupport(Block block)
+        public void AddGrassCoverageSupport(ShiftySettings config)
         {
             // check for grass coverage
             switch (block.LastCodePart()) {
                 case BlockCodes.SPARSE_GRASS_CODE:
-                    requiredSupport -= (int)(Config.Settings.GrassCoverBonus * 0.33f);
+                    requiredSupport -= (int)(config.GrassCoverBonus * 0.33f);
                     break;
 
                 case BlockCodes.PATCHY_GRASS_CODE:
-                    requiredSupport -= (int)(Config.Settings.GrassCoverBonus * 0.66f);
+                    requiredSupport -= (int)(config.GrassCoverBonus * 0.66f);
                     break;
 
                 case BlockCodes.GRASSY_GRASS_CODE:
-                    requiredSupport -= Config.Settings.GrassCoverBonus;
+                    requiredSupport -= config.GrassCoverBonus;
                     break;
 
                 default:
                     break;
             }
+        }
+
+        /// <summary>
+        /// Configures the behavior based on the injected mod settings.
+        /// </summary>
+        public void ConfigureBehavior(ShiftySettings config)
+        {
+            // make sure we're only being shifty with certain blocks
+            (isShifty, EarthType shiftyType) = IsWhatShiftyBlock();
+
+            if (!isShifty) {
+                return;
+            }
+
+            // one of the only options not earth-typed. Grass is precached based on the block code later.
+            plantBonus = config.PlantHostBonus;
+
+            // set properties based on configured settings
+            // penalties and bonuses are cached and precalculated for improved performance
+            switch (shiftyType) {
+                case EarthType.NONE:
+                    isShifty = false;
+                    break;
+
+                case EarthType.Soil:
+                    ConfigureAsSoil(config);
+                    break;
+
+                case EarthType.Clay:
+                    ConfigureAsClay(config);
+                    break;
+
+                case EarthType.Peat:
+                    ConfigureAsPeat(config);
+                    break;
+
+                case EarthType.Farmland:
+                    ConfigureAsFarmland(config);
+                    break;
+
+                default:
+                    isShifty = false;
+                    break;
+            }
+
+            AddGrassCoverageSupport(config);
+        }
+
+        /// <summary>
+        /// Configures the shifty block using soil-based settings.
+        /// </summary>
+        public void ConfigureAsSoil(ShiftySettings config)
+        {
+            if (config.SoilBehavior is ShiftySettings.FallingBehaviorFlag.Vanilla) {
+                isShifty = false;
+            }
+            else if (config.SoilBehavior is ShiftySettings.FallingBehaviorFlag.Disabled) {
+                DisableFalling(); // setting support to an absurdly low number prevents the vanilla logic from ever triggering
+            }
+            else {
+                requiredSupport = config.SoilSupportRequired;
+                adjacentSupport = config.SoilAdjacentSupport;
+                belowSupport = config.SoilBelowSupport;
+                topSupport = config.SoilAboveSupport;
+                rainPenalty = config.MaximumSoilStormPenalty;
+                fallSideways = true;
+
+                // special code handling for forest floors, which otherwise count as soil
+                if (block.FirstCodePart() == BlockCodes.FORESTFLOOR_CODE) {
+                    if (config.ForestFloorIsStable) {
+                        DisableFalling();
+                    }
+                    else {
+                        requiredSupport -= config.ForestFloorBonus;
+                    }
+                }
+                _ = SetFallChance(config.SoilFallChance);
+            }
+        }
+
+        /// <summary>
+        /// Configures the shifty block using peat settings.
+        /// </summary>
+        public void ConfigureAsPeat(ShiftySettings config)
+        {
+            if (config.PeatBehavior is ShiftySettings.FallingBehaviorFlag.Vanilla) {
+                isShifty = false;
+            }
+            else if (config.PeatBehavior is ShiftySettings.FallingBehaviorFlag.Disabled) {
+                DisableFalling();
+            }
+            else {
+                requiredSupport = config.PeatSupportRequired;
+                adjacentSupport = config.PeatAdjacentSupport;
+                belowSupport = config.PeatBelowSupport;
+                topSupport = config.PeatAboveSupport;
+                rainPenalty = config.MaximumPeatStormPenalty;
+                fallSideways = true;
+                _ = SetFallChance(config.PeatFallChance);
+            }
+        }
+
+        /// <summary>
+        /// Configures the shifty block to use farmland settings.
+        /// </summary>
+        public void ConfigureAsFarmland(ShiftySettings config)
+        {
+            if (config.FarmlandBehavior is ShiftySettings.FallingBehaviorFlag.Vanilla or ShiftySettings.FallingBehaviorFlag.Disabled) {
+                DisableFalling(); // in case it somehow falls through the earlier behavior assignment
+            }
+            requiredSupport = config.FarmSupportRequired;
+            adjacentSupport = config.FarmAdjacentSupport;
+            belowSupport = config.FarmBelowSupport;
+            topSupport = config.FarmAboveSupport;
+            rainPenalty = config.MaximumFarmStormPenalty;
+            fallSideways = true;
+            _ = SetFallChance(config.FarmFallChance);
+        }
+
+        /// <summary>
+        /// Configures the shifty block to use clay settings.
+        /// </summary>
+        public void ConfigureAsClay(ShiftySettings config)
+        {
+            // clay does not fall in vanilla
+            if (config.ClayBehavior is ShiftySettings.FallingBehaviorFlag.Vanilla or ShiftySettings.FallingBehaviorFlag.Disabled) {
+                DisableFalling(); // in case it somehow falls through the earlier behavior assignment
+            }
+            else {
+                requiredSupport = config.ClaySupportRequired;
+                adjacentSupport = config.ClayAdjacentSupport;
+                belowSupport = config.ClayBelowSupport;
+                topSupport = config.ClayAboveSupport;
+                rainPenalty = config.MaximumClayStormPenalty;
+                fallSideways = true;
+                _ = SetFallChance(config.ClayFallChance);
+            }
+        }
+
+        /// <summary>
+        /// Disables the falling logic entirely by making the blocks require negative support.
+        /// </summary>
+        private void DisableFalling()
+        {
+            requiredSupport = -100;
         }
 
         /// <summary>

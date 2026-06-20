@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Vintagestory.API.Common;
+using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
 
 namespace BearsShiftyEarth
@@ -10,12 +11,26 @@ namespace BearsShiftyEarth
     /// </summary>
     public class BearsShiftyEarthModSystem : ModSystem
     {
+        #region Fields
+
+        private ShiftySettings? config;
+
+        #endregion Fields
+
         #region Methods
 
         // Called on server and client
         // Useful for registering block/entity classes on both sides
         public override void Start(ICoreAPI api)
         {
+            ShiftySettingsSystem configSys = api.ModLoader.GetModSystem<ShiftySettingsSystem>();
+            if (configSys == null) {
+                Mod.Logger.Error(Lang.Get("bearsshiftyearth:settings-missing-error"));
+                return;
+            }
+
+            config = configSys.Settings;
+
             // Only do this if the user wants soil instability in this world
             string blockGravity = api.World.Config.GetString("blockGravity", "sandgravel");
             if (blockGravity == "sandgravelsoil") {
@@ -26,6 +41,10 @@ namespace BearsShiftyEarth
 
         public override void AssetsFinalize(ICoreAPI api)
         {
+            if (config == null || api.Side != EnumAppSide.Server) {
+                return;
+            }
+
             // Only do this if the user wants soil instability in this world
             string blockGravity = api.World.Config.GetString("blockGravity", "sandgravel");
             if (blockGravity != "sandgravelsoil") {
@@ -33,36 +52,43 @@ namespace BearsShiftyEarth
             }
 
             string blockCode;
+
             foreach (Block block in api.World.Blocks) {
                 // Check if we should enable the block logic for clay and farmland
-
                 blockCode = block.Code.FirstCodePart();
 
-                if (blockCode is BlockCodes.CLAY_CODE && ShiftySettingsSystem.Settings.ClayBehavior == ShiftySettings.FallingBehaviorFlag.ShiftyEarth) {
+                // first, add falling code if it's clay and configured for this
+                if (blockCode is BlockCodes.CLAY_CODE && config.ClayBehavior == ShiftySettings.FallingBehaviorFlag.ShiftyEarth) {
                     // don't duplicate
                     if (block.HasBehavior<BlockBehaviorShiftyFalling>()) {
                         continue;
                     }
                     else {
-                        AttachShiftyBehavior(block);
+                        AttachShiftyBehavior(block, config);
                     }
                 }
-                else if (blockCode is BlockCodes.FARM_CODE && ShiftySettingsSystem.Settings.ClayBehavior == ShiftySettings.FallingBehaviorFlag.ShiftyEarth) {
+
+                // also add falling code to farmland if it's configured
+                else if (blockCode is BlockCodes.FARM_CODE && config.FarmlandBehavior == ShiftySettings.FallingBehaviorFlag.ShiftyEarth) {
                     if (block.HasBehavior<BlockBehaviorShiftyFalling>()) {
                         continue;
                     }
                     else {
-                        AttachShiftyBehavior(block);
+                        AttachShiftyBehavior(block, config);
                     }
                 }
+
+                // finally, if it has a shifty behavior, configure it with the loaded settings
+                block.GetBehavior<BlockBehaviorShiftyFalling>()?.ConfigureBehavior(config);
             }
+
             base.AssetsFinalize(api);
         }
 
         /// <summary>
         /// Creates a ShiftyFalling Block Behavior and manually attaches it to the block.
         /// </summary>
-        private void AttachShiftyBehavior(Block block)
+        private void AttachShiftyBehavior(Block block, ShiftySettings config)
         {
             // these don't actually mean anything right now, it just wanted a JSON and I didn't feel
             // like rewriting all the in-behavior
@@ -75,8 +101,12 @@ namespace BearsShiftyEarth
                     }");
 
             // manually add the block behavior if configured to do so
-            BlockBehavior shiftyFallingBehavior = new BlockBehaviorShiftyFalling(block);
+            BlockBehaviorShiftyFalling shiftyFallingBehavior = new(block);
             shiftyFallingBehavior.Initialize(shiftyProperties);
+
+            // for some reason we have to configure the behavior here because it gets missed by the ConfigureBehavior call in the main thread.
+            // apparently GetBehavior needs some kind of preregistration and it isn't catching the manually added ones.
+            shiftyFallingBehavior.ConfigureBehavior(config);
 
             List<BlockBehavior> behaviorsList = block.BlockBehaviors.ToList();
             behaviorsList.Add(shiftyFallingBehavior);

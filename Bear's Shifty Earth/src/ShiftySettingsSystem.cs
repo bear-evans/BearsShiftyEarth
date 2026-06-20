@@ -46,6 +46,9 @@ namespace BearsShiftyEarth
         public string PlantsComment { get => "Root systems help to stabilize soil. GrassCoverBonus indicates the bonus a soil block gets from having full grass coverage. Patchy will have 2/3 of this value, while sparse will have 1/3. PlantHostBonus indicates the support bonus granted by a plant block on its top surface, such as tall grass or a cattail. These two bonuses stack. Large plant blocks are assumed to have deep roots that fill the interior of the soil block and provide significant structural integrity, while grass is not as deep."; }
         public int GrassCoverBonus { get; set; } = 5;
         public int PlantHostBonus { get; set; } = 10;
+        public string ForestFloorComment { get => "If true, forest floor blocks are considered held together by tree roots and do not collapse at all. If false, what bonus should they get."; }
+        public bool ForestFloorIsStable { get; set; } = true;
+        public int ForestFloorBonus { get; set; } = 15;
         public string EnvironmentComment { get => "MaximumStormPenalty is a penalty to support given to any block exposed to heavy rain. This penalty is scaled down for less intense rain. By default, clay is sturdier than soil when dry but becomes LESS sturdy when wet. Peat is naturally very sludgy and becomes nearly impossible to support when wet. Farmland similarly absorbs water readily and becomes mud."; }
         public int MaximumSoilStormPenalty { get; set; } = -25;
         public int MaximumClayStormPenalty { get; set; } = -30;
@@ -68,8 +71,8 @@ namespace BearsShiftyEarth
         #region Properties
 
         /// <summary> Reference to the currently loaded settings object. </summary>
-        public static ShiftySettings Settings {
-            get => SETTINGS ?? new ShiftySettings();
+        public ShiftySettings Settings {
+            get => settings ?? new ShiftySettings();
         }
 
         private string SettingsFilename { get => "BearsShiftyEarth.json"; }
@@ -78,7 +81,7 @@ namespace BearsShiftyEarth
 
         #region Fields
 
-        private static ShiftySettings? SETTINGS;
+        private ShiftySettings? settings;
 
         #endregion Fields
 
@@ -103,18 +106,18 @@ namespace BearsShiftyEarth
         private void LoadOrCreateSettings(ICoreAPI api)
         {
             try {
-                SETTINGS = api.LoadModConfig<ShiftySettings>(SettingsFilename);
+                settings = api.LoadModConfig<ShiftySettings>(SettingsFilename);
 
-                if (SETTINGS == null) {
+                if (settings == null) {
                     Mod.Logger.Notification(Lang.Get("bearsshiftyearth:settings-initializing-file"));
-                    SETTINGS = new ShiftySettings();
+                    settings = new ShiftySettings();
                 }
 
-                api.StoreModConfig<ShiftySettings>(SETTINGS, SettingsFilename);
+                api.StoreModConfig<ShiftySettings>(settings, SettingsFilename);
             }
             catch (System.Exception ex) {
                 Mod.Logger.Error($"{Lang.Get("bearsshiftyearth:settings-load-error")} | {ex.Message}");
-                SETTINGS = new ShiftySettings();
+                settings = new ShiftySettings();
             }
         }
 
