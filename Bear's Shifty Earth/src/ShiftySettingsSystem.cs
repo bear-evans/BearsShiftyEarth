@@ -1,4 +1,5 @@
-﻿using Vintagestory.API.Common;
+﻿using System.Collections.Generic;
+using Vintagestory.API.Common;
 using Vintagestory.API.Config;
 
 namespace BearsShiftyEarth
@@ -59,6 +60,8 @@ namespace BearsShiftyEarth
         public float ClayFallChance { get; set; } = 0.4f;
         public float PeatFallChance { get; set; } = 0.75f;
         public float FarmFallChance { get; set; } = 0.75f;
+        public string SolidBlockOverrides { get => "Blocks here will count as a solid neighbor, even if they are not."; }
+        public List<string> SolidityOverrides = [];
 
         #endregion Fields
     }

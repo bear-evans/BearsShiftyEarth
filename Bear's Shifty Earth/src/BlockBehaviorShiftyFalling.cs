@@ -12,6 +12,12 @@ namespace BearsShiftyEarth
     /// </summary>
     public class BlockBehaviorShiftyFalling : BlockBehaviorUnstableFalling
     {
+        #region Properties
+
+        public ShiftyProps ShiftyProps { get => props; }
+
+        #endregion Properties
+
         #region Fields
 
         [ThreadStatic]
@@ -24,6 +30,8 @@ namespace BearsShiftyEarth
         private int topSupport;
         private int rainPenalty;
         private int plantBonus;
+
+        private ShiftyProps props;
 
         #endregion Fields
 
@@ -93,7 +101,8 @@ namespace BearsShiftyEarth
 
             int effectiveSupport = 0;
 
-            IBlockAccessor blockAccessor = world.GetLockFreeBlockAccessor();
+            IBlockAccessor blockAccessor = world.BlockAccessor;
+            Block scannedBlock;
 
             // if we are exposed to the sky, penalize support based on the amount of rainfall. Light drizzle isn't enough to
             // trigger any penalty, I've noticed, so no need for special logic there
@@ -103,7 +112,8 @@ namespace BearsShiftyEarth
 
             // check for support below
             _ = scanPos.Set(pos.X, pos.Y - 1, pos.Z);
-            if (blockAccessor.GetBlock(scanPos).SideSolid[BlockFacing.UP.Index]) {
+            scannedBlock = blockAccessor.GetBlock(scanPos);
+            if (scannedBlock.SideSolid[BlockFacing.UP.Index]) {
                 effectiveSupport += belowSupport;
                 if (effectiveSupport >= requiredSupport) {
                     return false;
@@ -114,8 +124,9 @@ namespace BearsShiftyEarth
             for (int i = 0; i < BlockFacing.HORIZONTALS.Length; i++) {
                 BlockFacing blockFacing = BlockFacing.HORIZONTALS[i];
                 _ = scanPos.Set(pos.X + blockFacing.Normali.X, pos.Y, pos.Z + blockFacing.Normali.Z);
+                scannedBlock = blockAccessor.GetBlock(scanPos);
 
-                if (blockAccessor.GetBlock(scanPos).SideSolid[blockFacing.Opposite.Index]) {
+                if (scannedBlock.SideSolid[blockFacing.Opposite.Index] || scannedBlock.Code.Domain == "terrainslabs") {
                     effectiveSupport += adjacentSupport;
                     if (effectiveSupport >= requiredSupport) {
                         return false;
@@ -125,7 +136,8 @@ namespace BearsShiftyEarth
 
             // add solid top face
             _ = scanPos.Set(pos.X, pos.Y + 1, pos.Z);
-            if (blockAccessor.GetBlock(scanPos).SideSolid[BlockFacing.DOWN.Index]) {
+            scannedBlock = blockAccessor.GetBlock(scanPos);
+            if (scannedBlock.SideSolid[BlockFacing.DOWN.Index] || scannedBlock.Code.Domain == "terrainslabs") {
                 effectiveSupport += topSupport;
                 if (effectiveSupport >= requiredSupport) {
                     return false;
@@ -133,7 +145,8 @@ namespace BearsShiftyEarth
             }
 
             // if we're still not supported, check for a plant on top
-            if (blockAccessor.GetBlock(scanPos) is BlockPlant or BlockCrop) {
+            scannedBlock = blockAccessor.GetBlock(scanPos);
+            if (scannedBlock is BlockPlant or BlockCrop) {
                 effectiveSupport += plantBonus;
                 if (effectiveSupport >= requiredSupport) {
                     return false;

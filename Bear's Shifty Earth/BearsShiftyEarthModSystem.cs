@@ -13,6 +13,16 @@ namespace BearsShiftyEarth
     {
         #region Fields
 
+        public bool[] SolidOverrides { get; private set; } = [];
+
+        #endregion Fields
+
+        #region Methods
+
+        #endregion Methods
+
+        #region Fields
+
         private ShiftySettings? config;
 
         #endregion Fields
@@ -51,6 +61,7 @@ namespace BearsShiftyEarth
                 return;
             }
 
+            SolidOverrides = new bool[api.World.Blocks.Count];
             string blockCode;
 
             foreach (Block block in api.World.Blocks) {
@@ -80,9 +91,43 @@ namespace BearsShiftyEarth
 
                 // finally, if it has a shifty behavior, configure it with the loaded settings
                 block.GetBehavior<BlockBehaviorShiftyFalling>()?.ConfigureBehavior(config);
+
+                // automatically add terrain slabs as solid for compatibility
+                if (block.Code.Domain == "terrainslabs") {
+                    SolidOverrides[block.Id] = true;
+                }
+                else if (config.SolidityOverrides.Contains(block.Code)) {
+                }
             }
 
             base.AssetsFinalize(api);
+        }
+
+        public void GetClayJSON(ShiftySettings config)
+        {
+            JsonObject shiftyProperties = JsonObject.FromJson(@"{
+                        ""requiredSupport"": 0,
+                        ""adjacentSupport"": 0,
+                        ""belowSupport"": 0,
+                        ""topSupport"": 0,
+                        ""rainPenalty"": 0,
+                        ""plantBonus"": 0,
+                        ""fallChance"": 0
+                    }");
+
+            // clay does not fall in vanilla
+            if (config.ClayBehavior is ShiftySettings.FallingBehaviorFlag.Vanilla or ShiftySettings.FallingBehaviorFlag.Disabled) {
+                DisableFalling(); // in case it somehow falls through the earlier behavior assignment
+            }
+            else {
+                requiredSupport = config.ClaySupportRequired;
+                adjacentSupport = config.ClayAdjacentSupport;
+                belowSupport = config.ClayBelowSupport;
+                topSupport = config.ClayAboveSupport;
+                rainPenalty = config.MaximumClayStormPenalty;
+                fallSideways = true;
+                _ = SetFallChance(config.ClayFallChance);
+            }
         }
 
         /// <summary>
@@ -97,7 +142,10 @@ namespace BearsShiftyEarth
                         ""requiredSupport"": 8,
                         ""adjacentSupport"": 5,
                         ""belowSupport"": 15,
-                        ""topSupport"": 5
+                        ""topSupport"": 5,
+                        ""rainPenalty"": -10,
+                        ""plantBonus"": 15,
+                        ""fallChance"": 0.5
                     }");
 
             // manually add the block behavior if configured to do so
@@ -113,6 +161,23 @@ namespace BearsShiftyEarth
             block.BlockBehaviors = behaviorsList.ToArray();
         }
 
-        #endregion Methods
+        private void ConstructOverrides(ICoreAPI api)
+        {
+            if (config?.SolidityOverrides?.Count > 0) {
+                Block? testBlock;
+                for (int i = 0; i < config.SolidityOverrides.Count; i++) {
+                    testBlock = api.World.GetBlock(new AssetLocation(config.SolidityOverrides[i]));
+                    if (testBlock != null) {
+                        SolidOverrides[testBlock.Id] = true;
+                    }
+                }
+            }
+
+            // automatically add terrain slabs if enabled
+            if (api.ModLoader.IsModSystemEnabled("terrainslabs")) {
+            }
+        }
     }
 }
+
+        #endregion Methods
