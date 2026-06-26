@@ -48,14 +48,11 @@
       <HintPath>$(VINTAGE_STORY)/Lib/Microsoft.Data.Sqlite.dll</HintPath>
       <Private>False</Private>
     </Reference>
+	  <Reference Include="TerrainSlabs">
+		  <HintPath>compat/TerrainSlabs.dll</HintPath>
+		  <Private>false</Private>
+	  </Reference>
   </ItemGroup>
-
-	<ItemGroup>
-		<Reference Include="TerrainSlabs">
-		<HintPath>compat/TerrainSlabs.dll</HintPath>
-		<Private>False</Private>
-	</Reference>
-	</ItemGroup>
 	
 	<ItemGroup>
 		<Content Include="assets/**/*">
@@ -73,10 +70,6 @@
 		<Content Include="modicon.png" Condition="Exists('modicon.png')">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="compat\" />
 	</ItemGroup>
 
 </Project>

@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using BearsShiftyEarth.Compat;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
-using static BearsShiftyEarth.Compatibility;
 
 namespace BearsShiftyEarth
 {
@@ -34,6 +34,10 @@ namespace BearsShiftyEarth
 
             config = configSys.Settings;
 
+            // Not sure if this is how cross mod compatibility works!
+            // Fuck it, we're doing it live!
+            friendMods = Compatibility.GetFriendMods(config, api);
+
             // Only do this if the user wants soil instability in this world
             string blockGravity = api.World.Config.GetString("blockGravity", "sandgravel");
             if (blockGravity == "sandgravelsoil") {
@@ -41,9 +45,9 @@ namespace BearsShiftyEarth
                 api.RegisterBlockBehaviorClass("UnstableFalling", typeof(BlockBehaviorShiftyFalling));
             }
 
-            // Not sure if this is how cross mod compatibility works!
-            // Fuck it, we're doing it live!
-            friendMods = Compatibility.GetFriendMods(config, api);
+            foreach (IModCompatHandler mod in friendMods) {
+                mod.RegisterCompatBehaviors(api);
+            }
         }
 
         public override void AssetsFinalize(ICoreAPI api)
