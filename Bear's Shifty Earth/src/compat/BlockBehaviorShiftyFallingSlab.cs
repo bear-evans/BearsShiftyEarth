@@ -1,14 +1,13 @@
-﻿using Vintagestory.API.Common;
-using Vintagestory.API.Datastructures;
+﻿using TerrainSlabs.Source.BlockBehaviors;
+using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
-using Vintagestory.GameContent;
 
-namespace BearsShiftyEarth
+namespace BearsShiftyEarth.Compat
 {
     /// <summary>
-    /// Custom block behavior for Shifty Earth logic. Inherits from BlockBehaviorUnstableFalling and acts as a wrapper for the vanilla falling logic. Does not replace or overwrite UnstableFalling's logic and so should be safe to patch from other mods.
+    /// Hacked together behavior for a Shifty Earth version of Terrain Slab's falling blocks.
     /// </summary>
-    public class BlockBehaviorShiftyFalling : BlockBehaviorUnstableFalling
+    public class BlockBehaviorShiftyFallingSlab : BlockBehaviorUnstableFallingSlab
     {
         #region Properties
 
@@ -48,32 +47,11 @@ namespace BearsShiftyEarth
 
         #region Constructors
 
-        public BlockBehaviorShiftyFalling(Block block) : base(block)
+        public BlockBehaviorShiftyFallingSlab(Block slab) : base(slab)
         {
         }
 
         #endregion Constructors
-
-        #region Methods
-
-        /// <summary>
-        /// As the block is finalized, configure and precache as much of the fiddly little options as possible.
-        /// </summary>
-        public override void Initialize(JsonObject properties)
-        {
-            props = new ShiftyProps {
-                requiredSupport = properties["requiredSupport"].AsInt(),
-                aboveSupport = properties["topSupport"].AsInt(),
-                belowSupport = properties["belowSupport"].AsInt(),
-                adjacentSupport = properties["adjacentSupport"].AsInt(),
-                rainPenalty = properties["rainPenalty"].AsInt(),
-                plantBonus = properties["plantBonus"].AsInt()
-            };
-
-            base.Initialize(properties);
-        }
-
-        #endregion Methods
 
         #region Methods
 

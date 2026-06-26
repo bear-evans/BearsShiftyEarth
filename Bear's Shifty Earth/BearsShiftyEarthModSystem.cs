@@ -3,6 +3,7 @@ using System.Linq;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
 using Vintagestory.API.Datastructures;
+using static BearsShiftyEarth.Compatibility;
 
 namespace BearsShiftyEarth
 {
@@ -13,17 +14,9 @@ namespace BearsShiftyEarth
     {
         #region Fields
 
-        public bool[] SolidOverrides { get; private set; } = [];
-
-        #endregion Fields
-
-        #region Methods
-
-        #endregion Methods
-
-        #region Fields
-
+        private bool[] solidOverrides = [];
         private ShiftySettings? config;
+        private List<IModCompatHandler> friendMods = [];
 
         #endregion Fields
 
@@ -47,6 +40,10 @@ namespace BearsShiftyEarth
                 // We register our custom behavior under the default behavior's name to route the logic through us
                 api.RegisterBlockBehaviorClass("UnstableFalling", typeof(BlockBehaviorShiftyFalling));
             }
+
+            // Not sure if this is how cross mod compatibility works!
+            // Fuck it, we're doing it live!
+            friendMods = Compatibility.GetFriendMods(config, api);
         }
 
         public override void AssetsFinalize(ICoreAPI api)
@@ -61,8 +58,10 @@ namespace BearsShiftyEarth
                 return;
             }
 
-            SolidOverrides = new bool[api.World.Blocks.Count];
+            // instantiate stuff for the loop
+            solidOverrides = new bool[api.World.Blocks.Count];
             string blockCode;
+            ConfigurationFactory shiftyFactory = new(config);
 
             foreach (Block block in api.World.Blocks) {
                 // Check if we should enable the block logic for clay and farmland
@@ -75,7 +74,7 @@ namespace BearsShiftyEarth
                         continue;
                     }
                     else {
-                        AttachShiftyBehavior(block, config);
+                        AttachShiftyBehavior(block, shiftyFactory);
                     }
                 }
 
@@ -85,55 +84,40 @@ namespace BearsShiftyEarth
                         continue;
                     }
                     else {
-                        AttachShiftyBehavior(block, config);
+                        AttachShiftyBehavior(block, shiftyFactory);
                     }
                 }
 
                 // finally, if it has a shifty behavior, configure it with the loaded settings
-                block.GetBehavior<BlockBehaviorShiftyFalling>()?.ConfigureBehavior(config);
+                BlockBehaviorShiftyFalling behavior = block.GetBehavior<BlockBehaviorShiftyFalling>();
+                if (behavior != null) {
+                    shiftyFactory.ConfigureBehavior(behavior);
+                }
 
                 // automatically add terrain slabs as solid for compatibility
                 if (block.Code.Domain == "terrainslabs") {
-                    SolidOverrides[block.Id] = true;
-                }
-                else if (config.SolidityOverrides.Contains(block.Code)) {
+                    solidOverrides[block.Id] = true;
                 }
             }
 
+            // iterate over the solidity overrides and cache them
+            foreach (string solidOverride in config.SolidityOverrides) {
+                Block[] blocks = api.World.SearchBlocks(solidOverride);
+                if (blocks.Length > 0) {
+                    foreach (Block block in blocks) {
+                        solidOverrides[block.Id] = true;
+                    }
+                }
+            }
+
+            ShiftyUtil.Solids = solidOverrides;
             base.AssetsFinalize(api);
-        }
-
-        public void GetClayJSON(ShiftySettings config)
-        {
-            JsonObject shiftyProperties = JsonObject.FromJson(@"{
-                        ""requiredSupport"": 0,
-                        ""adjacentSupport"": 0,
-                        ""belowSupport"": 0,
-                        ""topSupport"": 0,
-                        ""rainPenalty"": 0,
-                        ""plantBonus"": 0,
-                        ""fallChance"": 0
-                    }");
-
-            // clay does not fall in vanilla
-            if (config.ClayBehavior is ShiftySettings.FallingBehaviorFlag.Vanilla or ShiftySettings.FallingBehaviorFlag.Disabled) {
-                DisableFalling(); // in case it somehow falls through the earlier behavior assignment
-            }
-            else {
-                requiredSupport = config.ClaySupportRequired;
-                adjacentSupport = config.ClayAdjacentSupport;
-                belowSupport = config.ClayBelowSupport;
-                topSupport = config.ClayAboveSupport;
-                rainPenalty = config.MaximumClayStormPenalty;
-                fallSideways = true;
-                _ = SetFallChance(config.ClayFallChance);
-            }
         }
 
         /// <summary>
         /// Creates a ShiftyFalling Block Behavior and manually attaches it to the block.
         /// </summary>
-        private void AttachShiftyBehavior(Block block, ShiftySettings config)
+        private void AttachShiftyBehavior(Block block, ConfigurationFactory factory)
         {
             // these don't actually mean anything right now, it just wanted a JSON and I didn't feel
             // like rewriting all the in-behavior
@@ -154,28 +138,11 @@ namespace BearsShiftyEarth
 
             // for some reason we have to configure the behavior here because it gets missed by the ConfigureBehavior call in the main thread.
             // apparently GetBehavior needs some kind of preregistration and it isn't catching the manually added ones.
-            shiftyFallingBehavior.ConfigureBehavior(config);
+            factory.ConfigureBehavior(shiftyFallingBehavior);
 
             List<BlockBehavior> behaviorsList = block.BlockBehaviors.ToList();
             behaviorsList.Add(shiftyFallingBehavior);
             block.BlockBehaviors = behaviorsList.ToArray();
-        }
-
-        private void ConstructOverrides(ICoreAPI api)
-        {
-            if (config?.SolidityOverrides?.Count > 0) {
-                Block? testBlock;
-                for (int i = 0; i < config.SolidityOverrides.Count; i++) {
-                    testBlock = api.World.GetBlock(new AssetLocation(config.SolidityOverrides[i]));
-                    if (testBlock != null) {
-                        SolidOverrides[testBlock.Id] = true;
-                    }
-                }
-            }
-
-            // automatically add terrain slabs if enabled
-            if (api.ModLoader.IsModSystemEnabled("terrainslabs")) {
-            }
         }
     }
 }
