@@ -12,6 +12,15 @@ namespace BearsShiftyEarth
     /// </summary>
     public class BearsShiftyEarthModSystem : ModSystem
     {
+        #region Methods
+
+        public override double ExecuteOrder()
+        {
+            return 0.3;
+        }
+
+        #endregion Methods
+
         #region Fields
 
         private bool[] solidOverrides = [];
@@ -45,6 +54,7 @@ namespace BearsShiftyEarth
                 api.RegisterBlockBehaviorClass("UnstableFalling", typeof(BlockBehaviorShiftyFalling));
             }
 
+            // Register block behaviors from our friends, too.
             foreach (IModCompatHandler mod in friendMods) {
                 mod.RegisterCompatBehaviors(api);
             }

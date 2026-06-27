@@ -48,10 +48,6 @@
       <HintPath>$(VINTAGE_STORY)/Lib/Microsoft.Data.Sqlite.dll</HintPath>
       <Private>False</Private>
     </Reference>
-	  <Reference Include="TerrainSlabs">
-		  <HintPath>compat/TerrainSlabs.dll</HintPath>
-		  <Private>false</Private>
-	  </Reference>
   </ItemGroup>
 	
 	<ItemGroup>
@@ -71,5 +67,13 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
 	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="../ShiftyEarthCompat/bin/Debug/ShiftyEarthCompat.dll">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</EmbeddedResource>
+	</ItemGroup>
+
+	
 
 </Project>

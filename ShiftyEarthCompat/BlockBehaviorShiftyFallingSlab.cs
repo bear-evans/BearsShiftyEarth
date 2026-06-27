@@ -60,6 +60,9 @@ namespace BearsShiftyEarth.Compat
         /// </summary>
         public override void OnBlockPlaced(IWorldAccessor world, BlockPos blockPos, ref EnumHandling handling)
         {
+#if DEBUG
+            world.Api.Logger.Warning("Successfully hijacked terrain slabs logic!");
+#endif
             if (world.Side == EnumAppSide.Client) {
                 return;
             }

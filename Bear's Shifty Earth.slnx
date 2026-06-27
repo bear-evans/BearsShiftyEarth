@@ -1,5 +1,7 @@
 <Solution>
-  <Project Path="Bear's Shifty Earth/BearsShiftyEarth.csproj" />
+  <Project Path="Bear's Shifty Earth/BearsShiftyEarth.csproj">
+    <BuildDependency Project="ShiftyEarthCompat/ShiftyEarthCompat.csproj" />
+  </Project>
   <Project Path="CakeBuild/CakeBuild.csproj" />
   <Project Path="ShiftyEarthCompat/ShiftyEarthCompat.csproj" Id="aa2be2e2-eae1-4c5a-b777-cca97ccf21d5" />
 </Solution>

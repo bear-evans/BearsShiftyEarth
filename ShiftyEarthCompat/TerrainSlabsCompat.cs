@@ -10,7 +10,7 @@ namespace BearsShiftyEarth.Compat
     {
         #region Properties
 
-        public Mod? FriendMod { get => modRef; }
+        public Mod? FriendMod { get => modRef; set => modRef = value; }
 
         #endregion Properties
 
@@ -22,9 +22,8 @@ namespace BearsShiftyEarth.Compat
 
         #region Constructors
 
-        internal TerrainSlabsCompat(ShiftySettings config, Mod terrainslabs)
+        public TerrainSlabsCompat()
         {
-            modRef = terrainslabs;
         }
 
         #endregion Constructors
