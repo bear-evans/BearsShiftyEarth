@@ -1,6 +1,6 @@
 ﻿namespace BearsShiftyEarth
 {
-    internal static class BlockCodes
+    public static class BlockCodes
     {
         #region Fields
 

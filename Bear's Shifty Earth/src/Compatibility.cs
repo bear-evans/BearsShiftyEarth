@@ -22,9 +22,7 @@ namespace BearsShiftyEarth.Compat
 
         void RegisterCompatBehaviors(ICoreAPI api);
 
-        void AttachBehaviorsToBlocks(ShiftySettings config, ICoreAPI api);
-
-        void ConfigureCompatBlocks(ShiftySettings config, ConfigurationFactory factory);
+        void ConfigureCompatBlock(Block block, ShiftySettings config);
 
         #endregion Methods
     }

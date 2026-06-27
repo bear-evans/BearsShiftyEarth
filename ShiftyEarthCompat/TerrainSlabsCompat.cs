@@ -17,6 +17,7 @@ namespace BearsShiftyEarth.Compat
         #region Fields
 
         private Mod? modRef;
+        private ConfigurationFactoryFriend? factory;
 
         #endregion Fields
 
@@ -31,15 +32,14 @@ namespace BearsShiftyEarth.Compat
         #region Methods
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public void AttachBehaviorsToBlocks(ShiftySettings config, ICoreAPI api)
+        public void ConfigureCompatBlock(Block block, ShiftySettings config)
         {
-            throw new System.NotImplementedException();
-        }
+            factory ??= new ConfigurationFactoryFriend(config);
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public void ConfigureCompatBlocks(ShiftySettings config, ConfigurationFactory factory)
-        {
-            throw new System.NotImplementedException();
+            // if it has this behavior, it's a terrain slab block that needs configured
+            if (block.GetBehavior<BlockBehaviorShiftyFallingSlab>() is BlockBehaviorShiftyFallingSlab behavior) {
+                factory.ConfigureBehavior(behavior);
+            }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

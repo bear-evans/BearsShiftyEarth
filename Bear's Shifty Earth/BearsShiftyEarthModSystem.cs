@@ -112,6 +112,11 @@ namespace BearsShiftyEarth
                 if (block.Code.Domain == "terrainslabs") {
                     solidOverrides[block.Id] = true;
                 }
+
+                // hand each block off to our friends
+                foreach (IModCompatHandler friend in friendMods) {
+                    friend.ConfigureCompatBlock(block, config);
+                }
             }
 
             // iterate over the solidity overrides and cache them
@@ -133,6 +138,11 @@ namespace BearsShiftyEarth
         /// </summary>
         private void AttachShiftyBehavior(Block block, ConfigurationFactory factory)
         {
+            // don't apply this behavior if the block is from a mod, we handle that elsewhere now
+            if (block.Code.Domain != "game") {
+                return;
+            }
+
             // these don't actually mean anything right now, it just wanted a JSON and I didn't feel
             // like rewriting all the in-behavior
             // configuration logic to appease the machine. It's here in case I want to for mod compatibility.
