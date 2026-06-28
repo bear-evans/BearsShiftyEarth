@@ -151,6 +151,7 @@ namespace BearsShiftyEarth.Compat
                 behavior.BelowSupport = config.SoilBelowSupport;
                 behavior.AboveSupport = config.SoilAboveSupport;
                 behavior.RainPenalty = config.MaximumSoilStormPenalty;
+                behavior.PlantBonus = config.PlantHostBonus;
                 _ = SetFallSidewaysChance(behavior, true);
                 _ = SetFallChance(behavior, config.SoilFallChance);
 
@@ -182,6 +183,7 @@ namespace BearsShiftyEarth.Compat
                 behavior.BelowSupport = config.ClayBelowSupport;
                 behavior.AboveSupport = config.ClayAboveSupport;
                 behavior.RainPenalty = config.MaximumClayStormPenalty;
+                behavior.PlantBonus = config.PlantHostBonus;
                 _ = SetFallSidewaysChance(behavior, true);
                 _ = SetFallChance(behavior, config.ClayFallChance);
             }
@@ -205,6 +207,7 @@ namespace BearsShiftyEarth.Compat
                 behavior.BelowSupport = config.PeatBelowSupport;
                 behavior.AboveSupport = config.PeatAboveSupport;
                 behavior.RainPenalty = config.MaximumPeatStormPenalty;
+                behavior.PlantBonus = config.PlantHostBonus;
                 _ = SetFallSidewaysChance(behavior, true);
                 _ = SetFallChance(behavior, config.PeatFallChance);
             }
@@ -225,6 +228,7 @@ namespace BearsShiftyEarth.Compat
                 behavior.BelowSupport = config.FarmBelowSupport;
                 behavior.AboveSupport = config.FarmAboveSupport;
                 behavior.RainPenalty = config.MaximumFarmStormPenalty;
+                behavior.PlantBonus = config.PlantHostBonus;
                 _ = SetFallSidewaysChance(behavior, true);
                 _ = SetFallChance(behavior, config.FarmFallChance);
             }

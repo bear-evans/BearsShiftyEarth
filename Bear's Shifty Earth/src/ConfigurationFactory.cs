@@ -41,11 +41,6 @@ namespace BearsShiftyEarth
                 return;
             }
 
-            ShiftyProps props = new() {
-                // one of the only options not earth-typed. Grass is precached based on the block code later.
-                plantBonus = config.PlantHostBonus
-            };
-
             // set properties based on configured settings
             // penalties and bonuses are cached and precalculated for improved performance
             switch (shiftyType) {
@@ -135,6 +130,7 @@ namespace BearsShiftyEarth
                 behavior.BelowSupport = config.SoilBelowSupport;
                 behavior.AboveSupport = config.SoilAboveSupport;
                 behavior.RainPenalty = config.MaximumSoilStormPenalty;
+                behavior.PlantBonus = config.PlantHostBonus;
                 behavior.fallSideways = true;
 
                 // special code handling for forest floors, which otherwise count as soil
@@ -166,6 +162,7 @@ namespace BearsShiftyEarth
                 behavior.BelowSupport = config.ClayBelowSupport;
                 behavior.AboveSupport = config.ClayAboveSupport;
                 behavior.RainPenalty = config.MaximumClayStormPenalty;
+                behavior.PlantBonus = config.PlantHostBonus;
                 behavior.fallSideways = true;
 
                 _ = SetFallChance(behavior, config.ClayFallChance);
@@ -190,6 +187,7 @@ namespace BearsShiftyEarth
                 behavior.BelowSupport = config.PeatBelowSupport;
                 behavior.AboveSupport = config.PeatAboveSupport;
                 behavior.RainPenalty = config.MaximumPeatStormPenalty;
+                behavior.PlantBonus = config.PlantHostBonus;
                 behavior.fallSideways = true;
 
                 _ = SetFallChance(behavior, config.PeatFallChance);
@@ -211,6 +209,7 @@ namespace BearsShiftyEarth
                 behavior.BelowSupport = config.FarmBelowSupport;
                 behavior.AboveSupport = config.FarmAboveSupport;
                 behavior.RainPenalty = config.MaximumFarmStormPenalty;
+                behavior.PlantBonus = config.PlantHostBonus;
                 behavior.fallSideways = true;
 
                 _ = SetFallChance(behavior, config.FarmFallChance);
