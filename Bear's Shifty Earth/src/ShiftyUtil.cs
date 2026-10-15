@@ -41,7 +41,7 @@ namespace BearsShiftyEarth
             // if we are exposed to the sky, penalize support based on the amount of rainfall. Light drizzle isn't enough to
             // trigger any penalty, I've noticed, so no need for special logic there
             if (blockAccessor.GetRainMapHeightAt(pos.X, pos.Z) <= pos.Y) {
-                effectiveSupport += (int)world.BlockAccessor.GetClimateAt(pos).Rainfall * props.rainPenalty;
+                effectiveSupport += (int)(world.BlockAccessor.GetClimateAt(pos).Rainfall * props.rainPenalty);
             }
 
             // check for support below
