@@ -228,7 +228,7 @@ namespace BearsShiftyEarth
                 // peat falls in vanilla
                 behavior.IsShifty = false;
             }
-            else if (config.SoilBehavior is FallFlag.Disabled) {
+            else if (config.PeatBehavior is FallFlag.Disabled) {
                 DisableFalling(ref behavior.Props);
             }
             else {
